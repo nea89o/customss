@@ -70,6 +70,11 @@
             mesonFlags = [(lib.mesonEnable "man-pages" buildDocs)];
           });
           formatter = pkgs.alejandra;
+          overlays = final: prev: {
+            inherit (packages) myss;
+          };
         }
-    );
+    )
+    // {
+    };
 }
