@@ -13,12 +13,30 @@
       system: let
         overlays = [];
         pkgs = import nixpkgs {inherit system overlays;};
-        deps = [pkgs.openssl];
       in
         with pkgs; rec {
           packages = {
-            slurp-patched = slurp-patched;
+            inherit slurp-patched myss;
           };
+          myss = symlinkJoin rec {
+            name = "myss";
+            deps = [
+              slurp-patched
+              grim
+              wl-clipboard
+              imagemagick
+              gnused
+              coreutils
+            ];
+            scriptSource = builtins.readFile ./myss.sh;
+            buildInputs = [makeWrapper];
+            scriptO = (writeScriptBin name scriptSource).overrideAttrs (old: {
+              buildCommand = "${old.buildCommand}\npatchShebangs $out";
+            });
+            paths = [scriptO] ++ deps;
+            postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
+          };
+
           slurp-patched = stdenv.mkDerivation (finalAttrs: rec {
             pname = "slurp";
             version = "1.0.0";
@@ -26,7 +44,7 @@
               owner = "tmccombs";
               repo = "slurp";
               rev = "8422167eb4899cd369e4a432ee78ff59659071a0";
-              hash = "sha256-2M8f3kN6tihwKlUCp2Qowv5xD6Ufb71AURXqwQShlXI=";
+              hash = "sha256-6cDcrCmsnFSSC2DEFr+zP4PklCWRZ+z8pUkeuUAIlBA=";
             };
             depsBuildBuild = [pkg-config];
 
