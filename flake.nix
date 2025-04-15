@@ -1,0 +1,57 @@
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    flake-utils,
+    ...
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        overlays = [];
+        pkgs = import nixpkgs {inherit system overlays;};
+        deps = [pkgs.openssl];
+      in
+        with pkgs; rec {
+          packages = {
+            slurp-patched = slurp-patched;
+          };
+          slurp-patched = stdenv.mkDerivation (finalAttrs: rec {
+            pname = "slurp";
+            version = "1.0.0";
+            src = fetchFromGitHub {
+              owner = "tmccombs";
+              repo = "slurp";
+              rev = "8422167eb4899cd369e4a432ee78ff59659071a0";
+              hash = "sha256-2M8f3kN6tihwKlUCp2Qowv5xD6Ufb71AURXqwQShlXI=";
+            };
+            depsBuildBuild = [pkg-config];
+
+            nativeBuildInputs =
+              [
+                meson
+                ninja
+                pkg-config
+                wayland-scanner
+              ]
+              ++ lib.optional buildDocs scdoc;
+
+            buildInputs = [
+              cairo
+              libxkbcommon
+              wayland
+              wayland-protocols
+            ];
+
+            strictDeps = true;
+            buildDocs = true;
+
+            mesonFlags = [(lib.mesonEnable "man-pages" buildDocs)];
+          });
+          formatter = pkgs.alejandra;
+        }
+    );
+}
